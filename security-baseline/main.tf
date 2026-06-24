@@ -1,5 +1,16 @@
 data "aws_caller_identity" "current" {}
 
+resource "aws_kms_key" "logs" {
+  description             = "Customer managed KMS key for security baseline logs"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+}
+
+resource "aws_kms_alias" "logs" {
+  name          = "alias/security-baseline-logs"
+  target_key_id = aws_kms_key.logs.key_id
+}
+
 resource "aws_s3_account_public_access_block" "this" {
   block_public_acls       = true
   block_public_policy     = true
