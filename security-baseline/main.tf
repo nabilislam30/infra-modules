@@ -31,6 +31,21 @@ resource "aws_s3_bucket_versioning" "cloudtrail_logs" {
   }
 }
 
+resource "aws_s3_bucket_object_lock_configuration" "cloudtrail_logs" {
+  bucket = aws_s3_bucket.cloudtrail_logs.id
+
+  rule {
+    default_retention {
+      mode = "COMPLIANCE"
+      days = 365
+    }
+  }
+
+  depends_on = [
+    aws_s3_bucket_versioning.cloudtrail_logs
+  ]
+}
+
 resource "aws_s3_bucket_public_access_block" "cloudtrail_logs" {
   bucket = aws_s3_bucket.cloudtrail_logs.id
 
@@ -38,6 +53,17 @@ resource "aws_s3_bucket_public_access_block" "cloudtrail_logs" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "cloudtrail_logs" {
+  bucket = aws_s3_bucket.cloudtrail_logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.logs.arn
+      sse_algorithm     = "aws:kms"
+    }
+  }
 }
 
 data "aws_iam_policy_document" "cloudtrail_logs" {
@@ -90,15 +116,61 @@ resource "aws_s3_bucket_policy" "cloudtrail_logs" {
   policy = data.aws_iam_policy_document.cloudtrail_logs.json
 }
 
+resource "aws_cloudwatch_log_group" "cloudtrail" {
+  name              = "/aws/cloudtrail/account-baseline"
+  retention_in_days = 365
+  kms_key_id        = aws_kms_key.logs.arn
+}
+
+resource "aws_iam_role" "cloudtrail_cloudwatch" {
+  name = "cloudtrail-cloudwatch-logs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "cloudtrail_cloudwatch" {
+  name = "cloudtrail-cloudwatch-logs-policy"
+  role = aws_iam_role.cloudtrail_cloudwatch.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
+      }
+    ]
+  })
+}
+
 resource "aws_cloudtrail" "this" {
   name                          = "account-baseline-trail"
   s3_bucket_name                = aws_s3_bucket.cloudtrail_logs.id
   include_global_service_events = true
   is_multi_region_trail         = true
   enable_log_file_validation    = true
+  kms_key_id                    = aws_kms_key.logs.arn
+  cloud_watch_logs_group_arn    = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
+  cloud_watch_logs_role_arn     = aws_iam_role.cloudtrail_cloudwatch.arn
 
   depends_on = [
-    aws_s3_bucket_policy.cloudtrail_logs
+    aws_s3_bucket_policy.cloudtrail_logs,
+    aws_iam_role_policy.cloudtrail_cloudwatch
   ]
 }
 
@@ -123,35 +195,84 @@ resource "aws_s3_bucket_public_access_block" "config_logs" {
   restrict_public_buckets = true
 }
 
-resource "aws_iam_role" "config" {
-  name = "aws-config-recorder-role"
+resource "aws_s3_bucket_server_side_encryption_configuration" "config_logs" {
+  bucket = aws_s3_bucket.config_logs.id
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "config.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.logs.arn
+      sse_algorithm     = "aws:kms"
+    }
+  }
 }
 
-resource "aws_iam_role_policy_attachment" "config" {
-  role       = aws_iam_role.config.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWS_ConfigRole"
+data "aws_iam_policy_document" "config_logs" {
+  statement {
+    sid = "AWSConfigBucketAclCheck"
+
+    principals {
+      type        = "Service"
+      identifiers = ["config.amazonaws.com"]
+    }
+
+    actions = [
+      "s3:GetBucketAcl"
+    ]
+
+    resources = [
+      aws_s3_bucket.config_logs.arn
+    ]
+  }
+
+  statement {
+    sid = "AWSConfigBucketWrite"
+
+    principals {
+      type        = "Service"
+      identifiers = ["config.amazonaws.com"]
+    }
+
+    actions = [
+      "s3:PutObject"
+    ]
+
+    resources = [
+      "${aws_s3_bucket.config_logs.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/Config/*"
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-acl"
+
+      values = [
+        "bucket-owner-full-control"
+      ]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "config_logs" {
+  bucket = aws_s3_bucket.config_logs.id
+  policy = data.aws_iam_policy_document.config_logs.json
 }
 
 resource "aws_config_configuration_recorder" "this" {
-  name     = "account-baseline-config-recorder"
-  role_arn = aws_iam_role.config.arn
+  name = "default"
+
+  role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig"
 
   recording_group {
     all_supported                 = true
     include_global_resource_types = true
+  }
+
+  lifecycle {
+    prevent_destroy = true
+
+    ignore_changes = [
+      role_arn,
+      recording_group
+    ]
   }
 }
 
@@ -160,7 +281,8 @@ resource "aws_config_delivery_channel" "this" {
   s3_bucket_name = aws_s3_bucket.config_logs.bucket
 
   depends_on = [
-    aws_config_configuration_recorder.this
+    aws_config_configuration_recorder.this,
+    aws_s3_bucket_policy.config_logs
   ]
 }
 
