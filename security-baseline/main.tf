@@ -119,7 +119,6 @@ resource "aws_s3_bucket_policy" "cloudtrail_logs" {
 resource "aws_cloudwatch_log_group" "cloudtrail" {
   name              = "/aws/cloudtrail/account-baseline"
   retention_in_days = 365
-  kms_key_id        = aws_kms_key.logs.arn
 }
 
 resource "aws_iam_role" "cloudtrail_cloudwatch" {
@@ -277,8 +276,19 @@ resource "aws_config_configuration_recorder" "this" {
 }
 
 resource "aws_config_delivery_channel" "this" {
-  name           = "account-baseline-config-delivery-channel"
+  name           = "default"
   s3_bucket_name = aws_s3_bucket.config_logs.bucket
+
+  lifecycle {
+    prevent_destroy = true
+
+    ignore_changes = [
+      name,
+      s3_bucket_name,
+      s3_key_prefix,
+      snapshot_delivery_properties
+    ]
+  }
 
   depends_on = [
     aws_config_configuration_recorder.this,
