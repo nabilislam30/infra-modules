@@ -1,16 +1,25 @@
-# ami-pipeline Module
+# AMI Pipeline Module
 
-## Purpose
+## Overview
 
-This module is part of the reusable Terraform module library.
+Reusable Terraform module for building and managing Amazon Machine Images (AMIs).
+
+## Planned Features
+
+- EC2 Image Builder
+- Image Pipelines
+- Distribution Configuration
+- IAM Roles
+- SNS Notifications
+
+## Inputs
+
+To be implemented during the module development phase.
+
+## Outputs
+
+To be implemented during the module development phase.
 
 ## Status
 
-Planned for a future implementation phase.
-
-## Files
-
-- main.tf
-- variables.tf
-- outputs.tf
-- versions.tf
+🚧 Planned for implementation during a future phase.

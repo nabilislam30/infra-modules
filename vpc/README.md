@@ -1,16 +1,28 @@
-# vpc Module
+# VPC Module
 
-## Purpose
+## Overview
 
-This module is part of the reusable Terraform module library.
+Reusable Terraform module for provisioning AWS networking resources.
+
+## Planned Features
+
+- VPC
+- Public Subnets
+- Private Subnets
+- Internet Gateway
+- NAT Gateway
+- Route Tables
+- Network ACLs
+- Security Groups
+
+## Inputs
+
+To be implemented during the module development phase.
+
+## Outputs
+
+To be implemented during the module development phase.
 
 ## Status
 
-Planned for a future implementation phase.
-
-## Files
-
-- main.tf
-- variables.tf
-- outputs.tf
-- versions.tf
+🚧 Planned for implementation during Phase 2.

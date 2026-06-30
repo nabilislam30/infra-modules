@@ -1,16 +1,26 @@
-# compute-asg Module
+# Compute ASG Module
 
-## Purpose
+## Overview
 
-This module is part of the reusable Terraform module library.
+Reusable Terraform module for provisioning scalable EC2 workloads.
+
+## Planned Features
+
+- Launch Templates
+- Auto Scaling Groups
+- EC2 Instances
+- IAM Instance Profiles
+- Security Groups
+- CloudWatch Integration
+
+## Inputs
+
+To be implemented during the module development phase.
+
+## Outputs
+
+To be implemented during the module development phase.
 
 ## Status
 
-Planned for a future implementation phase.
-
-## Files
-
-- main.tf
-- variables.tf
-- outputs.tf
-- versions.tf
+🚧 Planned for implementation during a future phase.

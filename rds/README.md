@@ -1,16 +1,26 @@
-# rds Module
+# RDS Module
 
-## Purpose
+## Overview
 
-This module is part of the reusable Terraform module library.
+Reusable Terraform module for deploying Amazon RDS databases.
+
+## Planned Features
+
+- RDS Instances
+- Parameter Groups
+- Option Groups
+- Subnet Groups
+- Security Groups
+- Automated Backups
+
+## Inputs
+
+To be implemented during the module development phase.
+
+## Outputs
+
+To be implemented during the module development phase.
 
 ## Status
 
-Planned for a future implementation phase.
-
-## Files
-
-- main.tf
-- variables.tf
-- outputs.tf
-- versions.tf
+🚧 Planned for implementation during a future phase.
