@@ -1,4 +1,4 @@
-# vpc Module
+# rds Module
 
 ## Purpose
 

@@ -1,4 +1,4 @@
-# vpc Module
+# ami-pipeline Module
 
 ## Purpose
 
