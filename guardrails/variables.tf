@@ -1,0 +1,3 @@
+/*
+Input variables will be added as guardrail resources are implemented.
+*/

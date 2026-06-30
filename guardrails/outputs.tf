@@ -1,0 +1,3 @@
+/*
+Outputs will be added as guardrail resources are implemented.
+*/
