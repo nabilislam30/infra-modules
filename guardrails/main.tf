@@ -84,7 +84,7 @@ resource "aws_iam_policy" "deny_unapproved_regions" {
   }
 }
 
-resource "aws_iam_policy" "protect_security-services" {
+resource "aws_iam_policy" "protect_security_services" {
   name        = "ProtectSecurityServices"
   description = "Deny actions that would disable security services"
   policy      = data.aws_iam_policy_document.protect_security_services.json
