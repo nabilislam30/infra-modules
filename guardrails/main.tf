@@ -106,3 +106,75 @@ resource "aws_iam_policy" "deny_iam_user_creation" {
     Project   = "Guardrails"
   }
 }
+
+data "aws_iam_policy_document" "permission_boundary" {
+  statement {
+    sid    = "DenyUnapprovedRegions"
+    effect = "Deny"
+
+    actions = [
+      "*"
+    ]
+
+    resources = [
+      "*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:RequestedRegion"
+
+      values = [
+        "eu-west-2",
+        "eu-west-1"
+      ]
+    }
+  }
+
+  statement {
+    sid    = "DenySecurityServiceDisablement"
+    effect = "Deny"
+
+    actions = [
+      "cloudtrail:DeleteTrail",
+      "cloudtrail:StopLogging",
+      "cloudtrail:UpdateTrail",
+      "config:DeleteConfigurationRecorder",
+      "config:DeleteDeliveryChannel",
+      "config:StopConfigurationRecorder",
+      "guardduty:DeleteDetector",
+      "guardduty:UpdateDetector",
+      "securityhub:DisableSecurityHub"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    sid    = "DenyIAMUserCreation"
+    effect = "Deny"
+
+    actions = [
+      "iam:CreateUser",
+      "iam:CreateAccessKey",
+      "iam:CreateLoginProfile"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "permission_boundary" {
+  name        = "PermissionBoundary"
+  description = "permission boundary policy for all IAM users and roles"
+  policy      = data.aws_iam_policy_document.permission_boundary.json
+
+  tags = {
+    managedBy = "Terraform"
+    project   = "Guardrails"
+  }
+}

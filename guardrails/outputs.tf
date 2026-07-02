@@ -16,3 +16,8 @@ output "deny_iam_user_creation_policy_arn" {
   description = "ARN of the IAM policy that denies creation of IAM users and long-term credentials."
   value       = aws_iam_policy.deny_iam_user_creation.arn
 }
+
+output "permission_boundary_policy_arn" {
+  description = "ARN of the IAM policy that serves as a permission boundary"
+  value       = aws_iam_policy.permission_boundary.arn
+}
