@@ -2,11 +2,26 @@
 ----------------------------------------------------------------------------
 Phase 2 - Guardrails Module
 
-This module implements account-level guardrails for a single AWS account.
+This module implements account-level IAM guardrails for a single AWS account.
 
-Resources will be added incrementally to reduce deployment risk.
+The module creates:
+- Region restriction policy
+- Security service protection policy
+- IAM user creation restriction policy
+- Combined permission boundary
+- Read-only developer IAM role
 ----------------------------------------------------------------------------
 */
+
+###############################################################
+# Current AWS Account
+###############################################################
+
+data "aws_caller_identity" "current" {}
+
+###############################################################
+# IAM Policy Documents
+###############################################################
 
 data "aws_iam_policy_document" "deny_unapproved_regions" {
   statement {
@@ -42,11 +57,14 @@ data "aws_iam_policy_document" "protect_security_services" {
       "cloudtrail:DeleteTrail",
       "cloudtrail:StopLogging",
       "cloudtrail:UpdateTrail",
+
       "config:DeleteConfigurationRecorder",
       "config:DeleteDeliveryChannel",
       "config:StopConfigurationRecorder",
+
       "guardduty:DeleteDetector",
       "guardduty:UpdateDetector",
+
       "securityhub:DisableSecurityHub"
     ]
 
@@ -73,41 +91,47 @@ data "aws_iam_policy_document" "deny_iam_user_creation" {
   }
 }
 
-resource "aws_iam_policy" "deny_unapproved_regions" {
-  name        = "DenyUnapprovedRegions"
-  description = "Deny all actions in unapproved regions"
-  policy      = data.aws_iam_policy_document.deny_unapproved_regions.json
+###############################################################
+# DevelopersRO Trust Policy
+###############################################################
 
-  tags = {
-    ManagedBy = "Terraform"
-    project   = "Guardrails"
+data "aws_iam_policy_document" "developers_ro_assume_role" {
+  statement {
+    sid    = "AllowAccountPrincipalsToAssumeRole"
+    effect = "Allow"
+
+    actions = [
+      "sts:AssumeRole"
+    ]
+
+    principals {
+      type = "AWS"
+
+      identifiers = [
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+      ]
+    }
   }
 }
 
-resource "aws_iam_policy" "protect_security_services" {
-  name        = "ProtectSecurityServices"
-  description = "Deny actions that would disable security services"
-  policy      = data.aws_iam_policy_document.protect_security_services.json
-
-  tags = {
-    ManagedBy = "Terraform"
-    project   = "Guardrails"
-
-  }
-}
-
-resource "aws_iam_policy" "deny_iam_user_creation" {
-  name        = "DenyIAMUserCreation"
-  description = "Deny creation of IAM users and long-term credentials"
-  policy      = data.aws_iam_policy_document.deny_iam_user_creation.json
-
-  tags = {
-    ManagedBy = "Terraform"
-    Project   = "Guardrails"
-  }
-}
+###############################################################
+# Permission Boundary Policy Document
+###############################################################
 
 data "aws_iam_policy_document" "permission_boundary" {
+  statement {
+    sid    = "AllowActionsWithinBoundary"
+    effect = "Allow"
+
+    actions = [
+      "*"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
   statement {
     sid    = "DenyUnapprovedRegions"
     effect = "Deny"
@@ -139,11 +163,14 @@ data "aws_iam_policy_document" "permission_boundary" {
       "cloudtrail:DeleteTrail",
       "cloudtrail:StopLogging",
       "cloudtrail:UpdateTrail",
+
       "config:DeleteConfigurationRecorder",
       "config:DeleteDeliveryChannel",
       "config:StopConfigurationRecorder",
+
       "guardduty:DeleteDetector",
       "guardduty:UpdateDetector",
+
       "securityhub:DisableSecurityHub"
     ]
 
@@ -168,13 +195,83 @@ data "aws_iam_policy_document" "permission_boundary" {
   }
 }
 
+###############################################################
+# AWS-Managed IAM Policy Lookup
+###############################################################
+
+data "aws_iam_policy" "read_only_access" {
+  name = "ReadOnlyAccess"
+}
+
+###############################################################
+# IAM Managed Policies
+###############################################################
+
+resource "aws_iam_policy" "deny_unapproved_regions" {
+  name        = "DenyUnapprovedRegions"
+  description = "Denies actions in AWS regions that have not been approved."
+  policy      = data.aws_iam_policy_document.deny_unapproved_regions.json
+
+  tags = {
+    ManagedBy = "Terraform"
+    Project   = "Guardrails"
+  }
+}
+
+resource "aws_iam_policy" "protect_security_services" {
+  name        = "ProtectSecurityServices"
+  description = "Prevents core AWS security services from being disabled or deleted."
+  policy      = data.aws_iam_policy_document.protect_security_services.json
+
+  tags = {
+    ManagedBy = "Terraform"
+    Project   = "Guardrails"
+  }
+}
+
+resource "aws_iam_policy" "deny_iam_user_creation" {
+  name        = "DenyIAMUserCreation"
+  description = "Prevents the creation of IAM users and long-term user credentials."
+  policy      = data.aws_iam_policy_document.deny_iam_user_creation.json
+
+  tags = {
+    ManagedBy = "Terraform"
+    Project   = "Guardrails"
+  }
+}
+
 resource "aws_iam_policy" "permission_boundary" {
-  name        = "PermissionBoundary"
-  description = "permission boundary policy for all IAM users and roles"
+  name        = "TerraformManagedRolePermissionBoundary"
+  description = "Maximum permissions boundary for IAM roles managed through Terraform."
   policy      = data.aws_iam_policy_document.permission_boundary.json
 
   tags = {
-    managedBy = "Terraform"
-    project   = "Guardrails"
+    ManagedBy = "Terraform"
+    Project   = "Guardrails"
   }
+}
+
+###############################################################
+# Read-Only Developer Role
+###############################################################
+
+resource "aws_iam_role" "developers_ro" {
+  name                 = var.developers_ro_role_name
+  assume_role_policy   = data.aws_iam_policy_document.developers_ro_assume_role.json
+  permissions_boundary = aws_iam_policy.permission_boundary.arn
+
+  tags = {
+    ManagedBy = "Terraform"
+    Project   = "Guardrails"
+    Access    = "ReadOnly"
+  }
+}
+
+###############################################################
+# IAM Role Policy Attachments
+###############################################################
+
+resource "aws_iam_role_policy_attachment" "developers_ro_read_only" {
+  role       = aws_iam_role.developers_ro.name
+  policy_arn = data.aws_iam_policy.read_only_access.arn
 }
