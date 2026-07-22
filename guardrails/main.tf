@@ -209,7 +209,7 @@ data "aws_iam_policy" "read_only_access" {
 
 resource "aws_iam_policy" "deny_unapproved_regions" {
   name        = "DenyUnapprovedRegions"
-  description = "Denies actions in AWS regions that have not been approved."
+  description = "Deny all actions in unapproved regions."
   policy      = data.aws_iam_policy_document.deny_unapproved_regions.json
 
   tags = {
@@ -220,7 +220,7 @@ resource "aws_iam_policy" "deny_unapproved_regions" {
 
 resource "aws_iam_policy" "protect_security_services" {
   name        = "ProtectSecurityServices"
-  description = "Prevents core AWS security services from being disabled or deleted."
+  description = "Deny actions that would disable security services."
   policy      = data.aws_iam_policy_document.protect_security_services.json
 
   tags = {
@@ -231,7 +231,7 @@ resource "aws_iam_policy" "protect_security_services" {
 
 resource "aws_iam_policy" "deny_iam_user_creation" {
   name        = "DenyIAMUserCreation"
-  description = "Prevents the creation of IAM users and long-term user credentials."
+  description = "Deny creation of IAM users and long-term credentials."
   policy      = data.aws_iam_policy_document.deny_iam_user_creation.json
 
   tags = {
