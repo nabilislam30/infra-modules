@@ -193,7 +193,39 @@ data "aws_iam_policy_document" "permission_boundary" {
       "*"
     ]
   }
+
+  statement {
+    sid    = "DenyCrossEnvironmentAccess"
+    effect = "Deny"
+
+    actions = [
+      "*"
+    ]
+
+    resources = [
+      "*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:ResourceTag/Environment"
+
+      values = [
+        "dev"
+      ]
+    }
+
+    condition {
+      test     = "Null"
+      variable = "aws:ResourceTag/Environment"
+
+      values = [
+        "false"
+      ]
+    }
+  }
 }
+
 
 ###############################################################
 # AWS-Managed IAM Policy Lookup
