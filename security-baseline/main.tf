@@ -400,6 +400,162 @@ resource "aws_config_config_rule" "root_account_mfa_enabled" {
   ]
 }
 
+resource "aws_config_config_rule" "s3_account_public_access_block" {
+  name = "s3-account-level-public-access-blocks"
+
+  source {
+    owner             = "AWS"
+    source_identifier = "S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCKS"
+  }
+
+  input_parameters = jsonencode({
+    BlockPublicAcls       = "true"
+    BlockPublicPolicy     = "true"
+    IgnorePublicAcls      = "true"
+    RestrictPublicBuckets = "true"
+  })
+
+  depends_on = [
+    aws_config_configuration_recorder_status.this
+  ]
+}
+
+resource "aws_config_config_rule" "required_tags" {
+  name = "required-tags"
+
+  source {
+    owner             = "AWS"
+    source_identifier = "REQUIRED_TAGS"
+  }
+
+  input_parameters = jsonencode({
+    tag1Key = "Environment"
+    tag2Key = "ManagedBy"
+    tag3Key = "Project"
+  })
+
+  scope {
+    compliance_resource_types = [
+      "AWS::EC2::Instance",
+      "AWS::S3::Bucket"
+    ]
+  }
+
+  depends_on = [
+    aws_config_configuration_recorder_status.this
+  ]
+}
+
+data "aws_iam_policy_document" "config_remediation_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type = "Service"
+
+      identifiers = [
+        "ssm.amazonaws.com"
+      ]
+    }
+
+    actions = [
+      "sts:AssumeRole"
+    ]
+  }
+}
+
+resource "aws_iam_role" "config_remediation" {
+  name               = "AWSConfigRemediationRole"
+  assume_role_policy = data.aws_iam_policy_document.config_remediation_assume_role.json
+
+  tags = {
+    ManagedBy   = "Terraform"
+    Project     = "SecurityBaseline"
+    Environment = "global"
+  }
+}
+
+data "aws_iam_policy_document" "config_remediation" {
+  statement {
+    sid    = "ManageS3AccountPublicAccessBlock"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetAccountPublicAccessBlock",
+      "s3:PutAccountPublicAccessBlock"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    sid    = "RunSSMAutomation"
+    effect = "Allow"
+
+    actions = [
+      "ssm:StartAutomationExecution",
+      "ssm:GetAutomationExecution"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "config_remediation" {
+  name   = "AWSConfigRemediationPolicy"
+  role   = aws_iam_role.config_remediation.id
+  policy = data.aws_iam_policy_document.config_remediation.json
+}
+
+resource "aws_config_remediation_configuration" "s3_account_public_access_block" {
+  config_rule_name = aws_config_config_rule.s3_account_public_access_block.name
+
+  target_type = "SSM_DOCUMENT"
+  target_id   = "AWSConfigRemediation-ConfigureS3PublicAccessBlock"
+
+  automatic                  = true
+  maximum_automatic_attempts = 5
+  retry_attempt_seconds      = 60
+
+  parameter {
+    name         = "AutomationAssumeRole"
+    static_value = aws_iam_role.config_remediation.arn
+  }
+
+  parameter {
+    name         = "AccountId"
+    static_value = data.aws_caller_identity.current.account_id
+  }
+
+  parameter {
+    name         = "BlockPublicAcls"
+    static_value = "true"
+  }
+
+  parameter {
+    name         = "BlockPublicPolicy"
+    static_value = "true"
+  }
+
+  parameter {
+    name         = "IgnorePublicAcls"
+    static_value = "true"
+  }
+
+  parameter {
+    name         = "RestrictPublicBuckets"
+    static_value = "true"
+  }
+
+  depends_on = [
+    aws_iam_role_policy.config_remediation
+  ]
+}
+
 resource "aws_ebs_encryption_by_default" "this" {
   enabled = true
 }
