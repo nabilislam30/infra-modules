@@ -4,23 +4,26 @@ Phase 2 - Guardrails Module
 
 This module implements account-level IAM guardrails for a single AWS account.
 
-The module creates:
-- Region restriction policy
-- Security service protection policy
-- IAM user creation restriction policy
-- Combined permission boundary
-- Read-only developer IAM role
+Controls include:
+- Restricting access to approved AWS regions
+- Protecting core security services
+- Preventing IAM user and long-term credential creation
+- Applying a permission boundary to human roles
+- Providing a read-only developer role
+- Separating environments using resource tags
+- Enforcing the Environment tag during supported resource creation actions
 ----------------------------------------------------------------------------
 */
 
 ###############################################################
-# Current AWS Account
+# AWS Account Information
 ###############################################################
 
 data "aws_caller_identity" "current" {}
 
+
 ###############################################################
-# IAM Policy Documents
+# Deny Unapproved AWS Regions
 ###############################################################
 
 data "aws_iam_policy_document" "deny_unapproved_regions" {
@@ -48,6 +51,11 @@ data "aws_iam_policy_document" "deny_unapproved_regions" {
   }
 }
 
+
+###############################################################
+# Protect Core Security Services
+###############################################################
+
 data "aws_iam_policy_document" "protect_security_services" {
   statement {
     sid    = "DenySecurityServiceDisablement"
@@ -65,7 +73,8 @@ data "aws_iam_policy_document" "protect_security_services" {
       "guardduty:DeleteDetector",
       "guardduty:UpdateDetector",
 
-      "securityhub:DisableSecurityHub"
+      "securityhub:DisableSecurityHub",
+      "securityhub:UpdateSecurityHubConfiguration"
     ]
 
     resources = [
@@ -73,6 +82,11 @@ data "aws_iam_policy_document" "protect_security_services" {
     ]
   }
 }
+
+
+###############################################################
+# Prevent IAM User and Long-Term Credential Creation
+###############################################################
 
 data "aws_iam_policy_document" "deny_iam_user_creation" {
   statement {
@@ -91,6 +105,7 @@ data "aws_iam_policy_document" "deny_iam_user_creation" {
   }
 }
 
+
 ###############################################################
 # DevelopersRO Trust Policy
 ###############################################################
@@ -100,10 +115,6 @@ data "aws_iam_policy_document" "developers_ro_assume_role" {
     sid    = "AllowAccountPrincipalsToAssumeRole"
     effect = "Allow"
 
-    actions = [
-      "sts:AssumeRole"
-    ]
-
     principals {
       type = "AWS"
 
@@ -111,16 +122,21 @@ data "aws_iam_policy_document" "developers_ro_assume_role" {
         "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
       ]
     }
+
+    actions = [
+      "sts:AssumeRole"
+    ]
   }
 }
 
+
 ###############################################################
-# Permission Boundary Policy Document
+# Permission Boundary
 ###############################################################
 
 data "aws_iam_policy_document" "permission_boundary" {
   statement {
-    sid    = "AllowActionsWithinBoundary"
+    sid    = "AllowApprovedPermissions"
     effect = "Allow"
 
     actions = [
@@ -171,7 +187,8 @@ data "aws_iam_policy_document" "permission_boundary" {
       "guardduty:DeleteDetector",
       "guardduty:UpdateDetector",
 
-      "securityhub:DisableSecurityHub"
+      "securityhub:DisableSecurityHub",
+      "securityhub:UpdateSecurityHubConfiguration"
     ]
 
     resources = [
@@ -224,6 +241,31 @@ data "aws_iam_policy_document" "permission_boundary" {
       ]
     }
   }
+
+  statement {
+    sid    = "DenyResourceCreationWithoutDevTag"
+    effect = "Deny"
+
+    actions = [
+      "ec2:RunInstances",
+      "rds:CreateDBInstance",
+      "rds:CreateDBCluster",
+      "lambda:CreateFunction"
+    ]
+
+    resources = [
+      "*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:RequestTag/Environment"
+
+      values = [
+        "dev"
+      ]
+    }
+  }
 }
 
 
@@ -235,8 +277,9 @@ data "aws_iam_policy" "read_only_access" {
   name = "ReadOnlyAccess"
 }
 
+
 ###############################################################
-# IAM Managed Policies
+# Managed Guardrail Policies
 ###############################################################
 
 resource "aws_iam_policy" "deny_unapproved_regions" {
@@ -245,8 +288,9 @@ resource "aws_iam_policy" "deny_unapproved_regions" {
   policy      = data.aws_iam_policy_document.deny_unapproved_regions.json
 
   tags = {
-    ManagedBy = "Terraform"
-    Project   = "Guardrails"
+    ManagedBy   = "Terraform"
+    Project     = "Guardrails"
+    Environment = "global"
   }
 }
 
@@ -256,8 +300,9 @@ resource "aws_iam_policy" "protect_security_services" {
   policy      = data.aws_iam_policy_document.protect_security_services.json
 
   tags = {
-    ManagedBy = "Terraform"
-    Project   = "Guardrails"
+    ManagedBy   = "Terraform"
+    Project     = "Guardrails"
+    Environment = "global"
   }
 }
 
@@ -267,24 +312,27 @@ resource "aws_iam_policy" "deny_iam_user_creation" {
   policy      = data.aws_iam_policy_document.deny_iam_user_creation.json
 
   tags = {
-    ManagedBy = "Terraform"
-    Project   = "Guardrails"
+    ManagedBy   = "Terraform"
+    Project     = "Guardrails"
+    Environment = "global"
   }
 }
 
 resource "aws_iam_policy" "permission_boundary" {
   name        = "TerraformManagedRolePermissionBoundary"
-  description = "Maximum permissions boundary for IAM roles managed through Terraform."
+  description = "Permission boundary for Terraform-managed human and CI roles"
   policy      = data.aws_iam_policy_document.permission_boundary.json
 
   tags = {
-    ManagedBy = "Terraform"
-    Project   = "Guardrails"
+    ManagedBy   = "Terraform"
+    Project     = "Guardrails"
+    Environment = "global"
   }
 }
 
+
 ###############################################################
-# Read-Only Developer Role
+# Developers Read-Only Role
 ###############################################################
 
 resource "aws_iam_role" "developers_ro" {
@@ -293,15 +341,12 @@ resource "aws_iam_role" "developers_ro" {
   permissions_boundary = aws_iam_policy.permission_boundary.arn
 
   tags = {
-    ManagedBy = "Terraform"
-    Project   = "Guardrails"
-    Access    = "ReadOnly"
+    ManagedBy   = "Terraform"
+    Project     = "Guardrails"
+    Environment = "dev"
+    Access      = "ReadOnly"
   }
 }
-
-###############################################################
-# IAM Role Policy Attachments
-###############################################################
 
 resource "aws_iam_role_policy_attachment" "developers_ro_read_only" {
   role       = aws_iam_role.developers_ro.name
