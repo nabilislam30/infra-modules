@@ -522,13 +522,13 @@ resource "aws_config_remediation_configuration" "s3_account_public_access_block"
   retry_attempt_seconds      = 60
 
   parameter {
-    name         = "AutomationAssumeRole"
-    static_value = aws_iam_role.config_remediation.arn
+    name         = "AccountId"
+    static_value = data.aws_caller_identity.current.account_id
   }
 
   parameter {
-    name         = "AccountId"
-    static_value = data.aws_caller_identity.current.account_id
+    name         = "AutomationAssumeRole"
+    static_value = aws_iam_role.config_remediation.arn
   }
 
   parameter {

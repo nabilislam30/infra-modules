@@ -320,7 +320,7 @@ resource "aws_iam_policy" "deny_iam_user_creation" {
 
 resource "aws_iam_policy" "permission_boundary" {
   name        = "TerraformManagedRolePermissionBoundary"
-  description = "Permission boundary for Terraform-managed human and CI roles"
+  description = "Maximum permissions boundary for IAM roles managed through Terraform."
   policy      = data.aws_iam_policy_document.permission_boundary.json
 
   tags = {
