@@ -501,28 +501,6 @@ Future enhancements include:
 
 ---
 
-# 🤝 Contributing
-
-Contributions are welcome and encouraged.
-
-If you wish to improve the project:
-
-1. Fork the repository.
-2. Create a feature branch.
-3. Make your changes.
-4. Test your Terraform configuration.
-5. Submit a Pull Request.
-
-Please ensure all Terraform code:
-
-- Passes `terraform fmt`
-- Passes `terraform validate`
-- Uses consistent formatting
-- Includes documentation updates where appropriate
-- Follows the existing module structure
-
----
-
 # 📏 Repository Standards
 
 To maintain consistency across the project, every module should:
@@ -614,20 +592,6 @@ See the [LICENSE](LICENSE) file for full details.
 
 ---
 
-# 👨‍💻 Author
-
-**Nabil Islam**
-
-Cloud & DevOps Engineer with a focus on Infrastructure as Code, AWS and automation.
-
-GitHub: https://github.com/nabilislam30
-
----
-
-# ⭐ Acknowledgements
-
-This repository has been developed as part of an ongoing effort to strengthen cloud engineering and DevOps capabilities through hands-on implementation of production-inspired AWS infrastructure.
-
 The project demonstrates practical experience with:
 
 - Terraform
@@ -640,11 +604,83 @@ The project demonstrates practical experience with:
 - DevOps Best Practices
 
 ---
+# 🤝 Contributing
 
-<div align="center">
+Contributions, suggestions and improvements are welcome.
 
-### Thank you for visiting this repository!
+## Contribution Workflow
 
-If you found this project useful or interesting, consider giving it a ⭐ on GitHub.
+1. Fork the repository.
+2. Create a branch from `main`.
+3. Make the required Terraform or documentation changes.
+4. Format and validate the configuration.
+5. Review the generated Terraform plan where applicable.
+6. Commit the changes using a clear commit message.
+7. Push the branch to your fork.
+8. Open a Pull Request describing the change.
 
-</div>
+Example:
+
+```bash
+git checkout -b feature/add-vpc-flow-logs
+
+terraform fmt -recursive
+terraform validate
+
+git add .
+git commit -m "feat: add VPC flow log support"
+git push origin feature/add-vpc-flow-logs
+```
+
+## Validation Requirements
+
+Before submitting a change, ensure the following checks pass:
+
+```bash
+terraform fmt -check -recursive
+terraform validate
+```
+
+Security scanning should also be completed where the required tooling is available.
+
+```bash
+trivy config .
+```
+
+## Module Standards
+
+New and updated modules should:
+
+- Follow the existing Terraform file structure.
+- Have a clear and limited responsibility.
+- Avoid hard-coded account or environment values.
+- Expose configurable values through input variables.
+- Add validation rules where appropriate.
+- Export useful resource identifiers through outputs.
+- Pin supported Terraform and provider versions.
+- Follow least-privilege principles.
+- Use secure defaults.
+- Include an updated module `README.md`.
+- Avoid committing credentials, secrets or Terraform state files.
+
+## Standard Module Structure
+
+```text
+module-name/
+├── README.md
+├── main.tf
+├── variables.tf
+├── outputs.tf
+└── versions.tf
+```
+
+## Commit Message Examples
+
+```text
+feat: add VPC flow log support
+fix: correct permission boundary policy
+docs: update security baseline documentation
+refactor: simplify AWS Config rule definitions
+chore: update AWS provider version
+```
+---
