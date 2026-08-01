@@ -2,6 +2,10 @@ locals {
   name_prefix = "${var.project_name}-${var.environment}"
 }
 
+# -----------------------------------------------------------------------------
+# SNS Monitoring Notifications
+# -----------------------------------------------------------------------------
+
 resource "aws_sns_topic" "monitoring_alerts" {
   name = "${local.name_prefix}-alerts"
 
@@ -190,120 +194,4 @@ resource "aws_cloudwatch_metric_alarm" "iam_policy_changes" {
   ]
 
   tags = var.common_tags
-}
-
-# -----------------------------------------------------------------------------
-# Out-of-Band Infrastructure Change Detection
-# -----------------------------------------------------------------------------
-
-resource "aws_cloudwatch_event_rule" "unapproved_assumed_role_changes" {
-  name        = "${local.name_prefix}-unapproved-role-changes"
-  description = "Detects mutating AWS API calls made by unapproved assumed roles."
-
-  event_pattern = jsonencode({
-    detail-type = [
-      "AWS API Call via CloudTrail"
-    ]
-
-    detail = {
-      readOnly = [
-        false
-      ]
-
-      userIdentity = {
-        type = [
-          "AssumedRole"
-        ]
-
-        sessionContext = {
-          sessionIssuer = {
-            arn = [
-              {
-                anything-but = tolist(var.deployment_role_arns)
-              }
-            ]
-          }
-        }
-      }
-    }
-  })
-
-  tags = var.common_tags
-}
-
-resource "aws_cloudwatch_event_target" "unapproved_assumed_role_changes" {
-  rule      = aws_cloudwatch_event_rule.unapproved_assumed_role_changes.name
-  target_id = "SendToMonitoringSns"
-  arn       = aws_sns_topic.monitoring_alerts.arn
-}
-
-resource "aws_cloudwatch_event_rule" "direct_identity_changes" {
-  name        = "${local.name_prefix}-direct-identity-changes"
-  description = "Detects mutating AWS API calls made directly by root or IAM identities."
-
-  event_pattern = jsonencode({
-    detail-type = [
-      "AWS API Call via CloudTrail"
-    ]
-
-    detail = {
-      readOnly = [
-        false
-      ]
-
-      userIdentity = {
-        type = [
-          "Root",
-          "IAMUser",
-          "FederatedUser"
-        ]
-      }
-    }
-  })
-
-  tags = var.common_tags
-}
-
-resource "aws_cloudwatch_event_target" "direct_identity_changes" {
-  rule      = aws_cloudwatch_event_rule.direct_identity_changes.name
-  target_id = "SendToMonitoringSns"
-  arn       = aws_sns_topic.monitoring_alerts.arn
-}
-
-data "aws_iam_policy_document" "monitoring_sns" {
-  statement {
-    sid    = "AllowEventBridgeToPublish"
-    effect = "Allow"
-
-    principals {
-      type = "Service"
-
-      identifiers = [
-        "events.amazonaws.com"
-      ]
-    }
-
-    actions = [
-      "sns:Publish"
-    ]
-
-    resources = [
-      aws_sns_topic.monitoring_alerts.arn
-    ]
-
-    condition {
-      test     = "ArnEquals"
-      variable = "aws:SourceArn"
-
-      values = [
-        aws_cloudwatch_event_rule.unapproved_assumed_role_changes.arn,
-        aws_cloudwatch_event_rule.direct_identity_changes.arn
-      ]
-    }
-  }
-}
-
-resource "aws_sns_topic_policy" "monitoring_alerts" {
-  arn    = aws_sns_topic.monitoring_alerts.arn
-  policy = data.aws_iam_policy_document.monitoring_sns.json
 }

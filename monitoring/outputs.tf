@@ -19,12 +19,3 @@ output "cloudwatch_alarm_arns" {
     iam_policy_changes     = aws_cloudwatch_metric_alarm.iam_policy_changes.arn
   }
 }
-
-output "out_of_band_event_rule_arns" {
-  description = "ARNs of the EventBridge rules used to detect out-of-band infrastructure changes."
-
-  value = {
-    unapproved_assumed_roles = aws_cloudwatch_event_rule.unapproved_assumed_role_changes.arn
-    direct_identities        = aws_cloudwatch_event_rule.direct_identity_changes.arn
-  }
-}

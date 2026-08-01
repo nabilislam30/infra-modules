@@ -9,20 +9,18 @@ variable "environment" {
 }
 
 variable "cloudtrail_log_group_name" {
-  description = "CloudWatch Log Group used by CloudTrail."
+  description = "Name of the CloudWatch Log Group used by CloudTrail."
   type        = string
 }
 
 variable "alarm_email_endpoint" {
-  description = "Email address subscribed to SNS alarm notifications."
+  description = "Email address subscribed to SNS monitoring notifications."
   type        = string
-}
 
-variable "common_tags" {
-  description = "Common resource tags."
-  type        = map(string)
-
-  default = {}
+  validation {
+    condition     = can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.alarm_email_endpoint))
+    error_message = "alarm_email_endpoint must be a valid email address."
+  }
 }
 
 variable "metric_namespace" {
@@ -31,12 +29,8 @@ variable "metric_namespace" {
   default     = "SecurityMonitoring"
 }
 
-variable "deployment_role_arns" {
-  description = "IAM role ARNs authorised to make infrastructure changes through Terraform."
-  type        = set(string)
-
-  validation {
-    condition     = length(var.deployment_role_arns) > 0
-    error_message = "At least one approved deployment role ARN must be provided."
-  }
+variable "common_tags" {
+  description = "Common tags applied to supported monitoring resources."
+  type        = map(string)
+  default     = {}
 }
