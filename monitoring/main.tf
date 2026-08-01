@@ -7,7 +7,8 @@ locals {
 # -----------------------------------------------------------------------------
 
 resource "aws_sns_topic" "monitoring_alerts" {
-  name = "${local.name_prefix}-alerts"
+  name              = "${local.name_prefix}-alerts"
+  kms_master_key_id = "alias/aws/sns"
 
   tags = merge(
     var.common_tags,
