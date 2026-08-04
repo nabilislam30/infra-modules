@@ -81,3 +81,8 @@ output "ecr_vpc_endpoint_ids" {
     dkr = aws_vpc_endpoint.ecr_dkr.id
   }
 }
+
+output "vpc_flow_log_id" {
+  description = "ID of the VPC Flow Log."
+  value       = aws_flow_log.this.id
+}

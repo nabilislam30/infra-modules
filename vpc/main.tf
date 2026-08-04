@@ -380,3 +380,21 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
     }
   )
 }
+
+# -----------------------------------------------------------------------------
+# VPC Flow Logs
+# -----------------------------------------------------------------------------
+
+resource "aws_flow_log" "this" {
+  vpc_id               = aws_vpc.this.id
+  traffic_type         = "ALL"
+  log_destination_type = "s3"
+  log_destination      = var.flow_log_destination_arn
+
+  tags = merge(
+    var.common_tags,
+    {
+      Name = "${var.name}-flow-log"
+    }
+  )
+}

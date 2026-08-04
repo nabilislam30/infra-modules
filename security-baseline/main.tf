@@ -1,5 +1,9 @@
 data "aws_caller_identity" "current" {}
 
+# -----------------------------------------------------------------------------
+# Central Logging KMS Key
+# -----------------------------------------------------------------------------
+
 resource "aws_kms_key" "logs" {
   description             = "Customer managed KMS key for security baseline logs"
   deletion_window_in_days = 30
@@ -7,43 +11,78 @@ resource "aws_kms_key" "logs" {
 
   policy = jsonencode({
     Version = "2012-10-17"
+
     Statement = [
       {
         Sid    = "AllowAccountKeyAdministration"
         Effect = "Allow"
+
         Principal = {
           AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
         }
+
         Action   = "kms:*"
         Resource = "*"
       },
       {
         Sid    = "AllowCloudTrailUseOfKey"
         Effect = "Allow"
+
         Principal = {
           Service = "cloudtrail.amazonaws.com"
         }
+
         Action = [
           "kms:GenerateDataKey*",
           "kms:DescribeKey"
         ]
+
         Resource = "*"
       },
       {
         Sid    = "AllowAWSConfigAndS3UseOfKey"
         Effect = "Allow"
+
         Principal = {
           Service = [
             "config.amazonaws.com",
             "s3.amazonaws.com"
           ]
         }
+
         Action = [
           "kms:GenerateDataKey*",
           "kms:Decrypt",
           "kms:DescribeKey"
         ]
+
         Resource = "*"
+      },
+      {
+        Sid    = "AllowVPCFlowLogsUseOfKey"
+        Effect = "Allow"
+
+        Principal = {
+          Service = "delivery.logs.amazonaws.com"
+        }
+
+        Action = [
+          "kms:GenerateDataKey*",
+          "kms:Decrypt",
+          "kms:DescribeKey"
+        ]
+
+        Resource = "*"
+
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+
+          ArnLike = {
+            "aws:SourceArn" = "arn:aws:logs:eu-west-2:${data.aws_caller_identity.current.account_id}:*"
+          }
+        }
       }
     ]
   })
@@ -54,12 +93,20 @@ resource "aws_kms_alias" "logs" {
   target_key_id = aws_kms_key.logs.key_id
 }
 
+# -----------------------------------------------------------------------------
+# Account-Level S3 Public Access Block
+# -----------------------------------------------------------------------------
+
 resource "aws_s3_account_public_access_block" "this" {
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
+# -----------------------------------------------------------------------------
+# CloudTrail Logging Bucket
+# -----------------------------------------------------------------------------
 
 resource "aws_s3_bucket" "cloudtrail_logs" {
   bucket              = "fimatix-cloudtrail-logs-${data.aws_caller_identity.current.account_id}"
@@ -109,6 +156,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "cloudtrail_logs" 
   }
 }
 
+# -----------------------------------------------------------------------------
+# CloudTrail and VPC Flow Logs Bucket Policy
+# -----------------------------------------------------------------------------
+
 data "aws_iam_policy_document" "cloudtrail_logs" {
   statement {
     sid = "AWSCloudTrailAclCheck"
@@ -152,12 +203,103 @@ data "aws_iam_policy_document" "cloudtrail_logs" {
       ]
     }
   }
+
+  statement {
+    sid    = "AWSVPCFlowLogsAclCheck"
+    effect = "Allow"
+
+    principals {
+      type = "Service"
+
+      identifiers = [
+        "delivery.logs.amazonaws.com"
+      ]
+    }
+
+    actions = [
+      "s3:GetBucketAcl"
+    ]
+
+    resources = [
+      aws_s3_bucket.cloudtrail_logs.arn
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+
+      values = [
+        data.aws_caller_identity.current.account_id
+      ]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+
+      values = [
+        "arn:aws:logs:eu-west-2:${data.aws_caller_identity.current.account_id}:*"
+      ]
+    }
+  }
+
+  statement {
+    sid    = "AWSVPCFlowLogsWrite"
+    effect = "Allow"
+
+    principals {
+      type = "Service"
+
+      identifiers = [
+        "delivery.logs.amazonaws.com"
+      ]
+    }
+
+    actions = [
+      "s3:PutObject"
+    ]
+
+    resources = [
+      "${aws_s3_bucket.cloudtrail_logs.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+
+      values = [
+        data.aws_caller_identity.current.account_id
+      ]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-acl"
+
+      values = [
+        "bucket-owner-full-control"
+      ]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+
+      values = [
+        "arn:aws:logs:eu-west-2:${data.aws_caller_identity.current.account_id}:*"
+      ]
+    }
+  }
 }
 
 resource "aws_s3_bucket_policy" "cloudtrail_logs" {
   bucket = aws_s3_bucket.cloudtrail_logs.id
   policy = data.aws_iam_policy_document.cloudtrail_logs.json
 }
+
+# -----------------------------------------------------------------------------
+# CloudTrail CloudWatch Logging
+# -----------------------------------------------------------------------------
 
 resource "aws_cloudwatch_log_group" "cloudtrail" {
   name              = "/aws/cloudtrail/account-baseline"
@@ -169,12 +311,15 @@ resource "aws_iam_role" "cloudtrail_cloudwatch" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
+
     Statement = [
       {
         Effect = "Allow"
+
         Principal = {
           Service = "cloudtrail.amazonaws.com"
         }
+
         Action = "sts:AssumeRole"
       }
     ]
@@ -187,13 +332,16 @@ resource "aws_iam_role_policy" "cloudtrail_cloudwatch" {
 
   policy = jsonencode({
     Version = "2012-10-17"
+
     Statement = [
       {
         Effect = "Allow"
+
         Action = [
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
+
         Resource = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
       }
     ]
@@ -215,6 +363,10 @@ resource "aws_cloudtrail" "this" {
     aws_iam_role_policy.cloudtrail_cloudwatch
   ]
 }
+
+# -----------------------------------------------------------------------------
+# AWS Config Logging Bucket
+# -----------------------------------------------------------------------------
 
 resource "aws_s3_bucket" "config_logs" {
   bucket = "fimatix-config-logs-${data.aws_caller_identity.current.account_id}"
@@ -298,6 +450,10 @@ resource "aws_s3_bucket_policy" "config_logs" {
   policy = data.aws_iam_policy_document.config_logs.json
 }
 
+# -----------------------------------------------------------------------------
+# AWS Config Recorder and Delivery Channel
+# -----------------------------------------------------------------------------
+
 resource "aws_config_configuration_recorder" "this" {
   name = "default"
 
@@ -347,6 +503,10 @@ resource "aws_config_configuration_recorder_status" "this" {
     aws_config_delivery_channel.this
   ]
 }
+
+# -----------------------------------------------------------------------------
+# AWS Config Rules
+# -----------------------------------------------------------------------------
 
 resource "aws_config_config_rule" "s3_bucket_public_read_prohibited" {
   name = "s3-bucket-public-read-prohibited"
@@ -445,6 +605,10 @@ resource "aws_config_config_rule" "required_tags" {
     aws_config_configuration_recorder_status.this
   ]
 }
+
+# -----------------------------------------------------------------------------
+# AWS Config Automatic Remediation
+# -----------------------------------------------------------------------------
 
 data "aws_iam_policy_document" "config_remediation_assume_role" {
   statement {
@@ -555,6 +719,10 @@ resource "aws_config_remediation_configuration" "s3_account_public_access_block"
     aws_iam_role_policy.config_remediation
   ]
 }
+
+# -----------------------------------------------------------------------------
+# Account Security Services
+# -----------------------------------------------------------------------------
 
 resource "aws_ebs_encryption_by_default" "this" {
   enabled = true

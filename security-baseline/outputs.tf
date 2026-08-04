@@ -12,3 +12,8 @@ output "cloudtrail_log_group_name" {
   description = "The name of the CloudWatch Log Group used by CloudTrail."
   value       = aws_cloudwatch_log_group.cloudtrail.name
 }
+
+output "cloudtrail_logs_bucket_arn" {
+  description = "ARN of the central S3 bucket used for CloudTrail and VPC Flow Logs."
+  value       = aws_s3_bucket.cloudtrail_logs.arn
+}

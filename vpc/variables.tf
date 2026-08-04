@@ -75,3 +75,8 @@ variable "aws_region" {
   description = "AWS Region used to construct VPC endpoint service names."
   type        = string
 }
+
+variable "flow_log_destination_arn" {
+  description = "ARN of the central S3 bucket used as the VPC Flow Logs destination."
+  type        = string
+}
