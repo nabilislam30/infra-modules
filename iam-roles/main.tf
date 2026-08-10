@@ -178,6 +178,7 @@ resource "aws_iam_policy" "read_permissions" {
 
   policy = data.aws_iam_policy_document.read_permissions.json
 }
+
 resource "aws_iam_role_policy_attachment" "dev_read_permissions" {
   role       = aws_iam_role.dev.name
   policy_arn = aws_iam_policy.read_permissions.arn
@@ -219,6 +220,7 @@ resource "aws_iam_policy" "config_remediation_permissions" {
 
   policy = data.aws_iam_policy_document.config_remediation_permissions.json
 }
+
 resource "aws_iam_role_policy_attachment" "dev_config_remediation_permissions" {
   role       = aws_iam_role.dev.name
   policy_arn = aws_iam_policy.config_remediation_permissions.arn
@@ -511,8 +513,227 @@ resource "aws_iam_role_policy_attachment" "prod_vpc_deployment_permissions" {
 }
 
 # -----------------------------------------------------------------------------
+# KMS Read Tags Permissions
+# -----------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "kms_read_tags_permissions" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "kms:ListResourceTags"
+    ]
+
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "kms_read_tags_permissions" {
+  name        = "TerraformDeployKMSReadTags"
+  description = "Allows Terraform deployment roles to list KMS resource tags."
+
+  policy = data.aws_iam_policy_document.kms_read_tags_permissions.json
+}
+
+resource "aws_iam_role_policy_attachment" "dev_kms_read_tags_permissions" {
+  role       = aws_iam_role.dev.name
+  policy_arn = aws_iam_policy.kms_read_tags_permissions.arn
+}
+
+resource "aws_iam_role_policy_attachment" "staging_kms_read_tags_permissions" {
+  role       = aws_iam_role.staging.name
+  policy_arn = aws_iam_policy.kms_read_tags_permissions.arn
+}
+
+resource "aws_iam_role_policy_attachment" "prod_kms_read_tags_permissions" {
+  role       = aws_iam_role.prod.name
+  policy_arn = aws_iam_policy.kms_read_tags_permissions.arn
+}
+
+# -----------------------------------------------------------------------------
+# Security Baseline Permissions
+# -----------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "security_baseline_permissions" {
+  statement {
+    sid    = "KMSForSecurityBaseline"
+    effect = "Allow"
+
+    actions = [
+      "kms:CreateKey",
+      "kms:CreateAlias",
+      "kms:DescribeKey",
+      "kms:GetKeyPolicy",
+      "kms:PutKeyPolicy",
+      "kms:EnableKeyRotation",
+      "kms:TagResource",
+      "kms:ListAliases",
+      "kms:ListKeys"
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "CloudTrailBaseline"
+    effect = "Allow"
+
+    actions = [
+      "cloudtrail:CreateTrail",
+      "cloudtrail:UpdateTrail",
+      "cloudtrail:StartLogging",
+      "cloudtrail:GetTrail",
+      "cloudtrail:GetTrailStatus",
+      "cloudtrail:DescribeTrails",
+      "cloudtrail:PutEventSelectors",
+      "cloudtrail:ListTags",
+      "cloudtrail:AddTags"
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "AWSConfigBaseline"
+    effect = "Allow"
+
+    actions = [
+      "config:PutConfigurationRecorder",
+      "config:PutDeliveryChannel",
+      "config:StartConfigurationRecorder",
+      "config:PutConfigRule",
+      "config:DescribeConfigurationRecorders",
+      "config:DescribeDeliveryChannels",
+      "config:DescribeConfigRules"
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "SecurityServicesBaseline"
+    effect = "Allow"
+
+    actions = [
+      "guardduty:CreateDetector",
+      "guardduty:GetDetector",
+      "guardduty:ListDetectors",
+      "guardduty:UpdateDetector",
+      "securityhub:EnableSecurityHub",
+      "securityhub:GetEnabledStandards",
+      "securityhub:BatchEnableStandards",
+      "securityhub:DescribeHub",
+      "access-analyzer:CreateAnalyzer",
+      "access-analyzer:GetAnalyzer",
+      "access-analyzer:ListAnalyzers"
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "CloudWatchLogsForCloudTrail"
+    effect = "Allow"
+
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:PutRetentionPolicy",
+      "logs:AssociateKmsKey",
+      "logs:DescribeLogGroups"
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "ServiceLinkedRoles"
+    effect = "Allow"
+
+    actions = [
+      "iam:CreateServiceLinkedRole"
+    ]
+
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "security_baseline_permissions" {
+  name        = "TerraformDeploySecurityBaselineAccess"
+  description = "Allows Terraform deployment roles to manage the existing security baseline."
+
+  policy = data.aws_iam_policy_document.security_baseline_permissions.json
+}
+
+resource "aws_iam_role_policy_attachment" "dev_security_baseline_permissions" {
+  role       = aws_iam_role.dev.name
+  policy_arn = aws_iam_policy.security_baseline_permissions.arn
+}
+
+resource "aws_iam_role_policy_attachment" "staging_security_baseline_permissions" {
+  role       = aws_iam_role.staging.name
+  policy_arn = aws_iam_policy.security_baseline_permissions.arn
+}
+
+resource "aws_iam_role_policy_attachment" "prod_security_baseline_permissions" {
+  role       = aws_iam_role.prod.name
+  policy_arn = aws_iam_policy.security_baseline_permissions.arn
+}
+
+# -----------------------------------------------------------------------------
+# Security Baseline Extra Permissions
+# -----------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "security_baseline_extra_permissions" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "kms:GetKeyRotationStatus",
+      "kms:ScheduleKeyDeletion",
+      "kms:CancelKeyDeletion"
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "securityhub:UpdateSecurityHubConfiguration",
+      "securityhub:DisableSecurityHub"
+    ]
+
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "security_baseline_extra_permissions" {
+  name        = "TerraformDeploySecurityBaselineExtraAccess"
+  description = "Provides the existing additional KMS and Security Hub permissions."
+
+  policy = data.aws_iam_policy_document.security_baseline_extra_permissions.json
+}
+
+resource "aws_iam_role_policy_attachment" "dev_security_baseline_extra_permissions" {
+  role       = aws_iam_role.dev.name
+  policy_arn = aws_iam_policy.security_baseline_extra_permissions.arn
+}
+
+resource "aws_iam_role_policy_attachment" "staging_security_baseline_extra_permissions" {
+  role       = aws_iam_role.staging.name
+  policy_arn = aws_iam_policy.security_baseline_extra_permissions.arn
+}
+
+resource "aws_iam_role_policy_attachment" "prod_security_baseline_extra_permissions" {
+  role       = aws_iam_role.prod.name
+  policy_arn = aws_iam_policy.security_baseline_extra_permissions.arn
+}
+
+# -----------------------------------------------------------------------------
 # Terraform Deployment Roles
 # -----------------------------------------------------------------------------
+
 resource "aws_iam_role" "dev" {
   name                 = "tf-deploy-dev"
   assume_role_policy   = data.aws_iam_policy_document.dev_deploy_role_trust.json
