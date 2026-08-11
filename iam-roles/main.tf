@@ -731,6 +731,90 @@ resource "aws_iam_role_policy_attachment" "prod_security_baseline_extra_permissi
 }
 
 # -----------------------------------------------------------------------------
+# Dev Terraform Backend Permissions
+# -----------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "dev_backend_permissions" {
+  statement {
+    sid    = "ListTerraformStateBucket"
+    effect = "Allow"
+
+    actions = [
+      "s3:ListBucket"
+    ]
+
+    resources = [
+      "arn:aws:s3:::fimatix-devops-starter-tfstate-442847318797"
+    ]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+
+      values = [
+        "dev/*",
+        "global/terraform.tfstate"
+      ]
+    }
+  }
+
+  statement {
+    sid    = "ManageDevTerraformState"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject"
+    ]
+
+    resources = [
+      "arn:aws:s3:::fimatix-devops-starter-tfstate-442847318797/dev/*"
+    ]
+  }
+
+  statement {
+    sid    = "ReadGlobalTerraformState"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject"
+    ]
+
+    resources = [
+      "arn:aws:s3:::fimatix-devops-starter-tfstate-442847318797/global/terraform.tfstate"
+    ]
+  }
+
+  statement {
+    sid    = "ManageTerraformStateLock"
+    effect = "Allow"
+
+    actions = [
+      "dynamodb:DescribeTable",
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:DeleteItem"
+    ]
+
+    resources = [
+      "arn:aws:dynamodb:eu-west-2:442847318797:table/terraform-state-locks"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "dev_backend_permissions" {
+  name        = "TerraformDeployDevBackendAccess"
+  description = "Allows the dev Terraform deployment role to access its remote state and state lock."
+
+  policy = data.aws_iam_policy_document.dev_backend_permissions.json
+}
+
+resource "aws_iam_role_policy_attachment" "dev_backend_permissions" {
+  role       = aws_iam_role.dev.name
+  policy_arn = aws_iam_policy.dev_backend_permissions.arn
+}
+
+# -----------------------------------------------------------------------------
 # Terraform Deployment Roles
 # -----------------------------------------------------------------------------
 
