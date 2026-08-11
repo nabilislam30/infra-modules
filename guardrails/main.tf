@@ -268,6 +268,405 @@ data "aws_iam_policy_document" "permission_boundary" {
   }
 }
 
+# -----------------------------------------------------------------------------
+# Deployment Role Permission Boundaries
+# -----------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "dev_deployment_permission_boundary" {
+  statement {
+    sid    = "AllowApprovedPermissions"
+    effect = "Allow"
+
+    actions = [
+      "*"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    sid    = "DenyUnapprovedRegions"
+    effect = "Deny"
+
+    actions = [
+      "*"
+    ]
+
+    resources = [
+      "*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:RequestedRegion"
+
+      values = [
+        "eu-west-2",
+        "eu-west-1"
+      ]
+    }
+  }
+
+  statement {
+    sid    = "DenySecurityServiceDisablement"
+    effect = "Deny"
+
+    actions = [
+      "cloudtrail:DeleteTrail",
+      "cloudtrail:StopLogging",
+      "cloudtrail:UpdateTrail",
+      "config:DeleteConfigurationRecorder",
+      "config:DeleteDeliveryChannel",
+      "config:StopConfigurationRecorder",
+      "guardduty:DeleteDetector",
+      "guardduty:UpdateDetector",
+      "securityhub:DisableSecurityHub",
+      "securityhub:UpdateSecurityHubConfiguration"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    sid    = "DenyIAMUserCreation"
+    effect = "Deny"
+
+    actions = [
+      "iam:CreateUser",
+      "iam:CreateAccessKey",
+      "iam:CreateLoginProfile"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    sid    = "DenyCrossEnvironmentAccess"
+    effect = "Deny"
+
+    actions = [
+      "*"
+    ]
+
+    resources = [
+      "*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:ResourceTag/Environment"
+
+      values = [
+        "dev",
+        "global"
+      ]
+    }
+
+    condition {
+      test     = "Null"
+      variable = "aws:ResourceTag/Environment"
+
+      values = [
+        "false"
+      ]
+    }
+  }
+
+  statement {
+    sid    = "DenyResourceCreationWithoutEnvironmentTag"
+    effect = "Deny"
+
+    actions = [
+      "ec2:RunInstances",
+      "rds:CreateDBInstance",
+      "rds:CreateDBCluster",
+      "lambda:CreateFunction"
+    ]
+
+    resources = [
+      "*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:RequestTag/Environment"
+
+      values = [
+        "dev"
+      ]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "staging_deployment_permission_boundary" {
+  statement {
+    sid    = "AllowApprovedPermissions"
+    effect = "Allow"
+
+    actions = [
+      "*"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    sid    = "DenyUnapprovedRegions"
+    effect = "Deny"
+
+    actions = [
+      "*"
+    ]
+
+    resources = [
+      "*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:RequestedRegion"
+
+      values = [
+        "eu-west-2",
+        "eu-west-1"
+      ]
+    }
+  }
+
+  statement {
+    sid    = "DenySecurityServiceDisablement"
+    effect = "Deny"
+
+    actions = [
+      "cloudtrail:DeleteTrail",
+      "cloudtrail:StopLogging",
+      "cloudtrail:UpdateTrail",
+      "config:DeleteConfigurationRecorder",
+      "config:DeleteDeliveryChannel",
+      "config:StopConfigurationRecorder",
+      "guardduty:DeleteDetector",
+      "guardduty:UpdateDetector",
+      "securityhub:DisableSecurityHub",
+      "securityhub:UpdateSecurityHubConfiguration"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    sid    = "DenyIAMUserCreation"
+    effect = "Deny"
+
+    actions = [
+      "iam:CreateUser",
+      "iam:CreateAccessKey",
+      "iam:CreateLoginProfile"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    sid    = "DenyCrossEnvironmentAccess"
+    effect = "Deny"
+
+    actions = [
+      "*"
+    ]
+
+    resources = [
+      "*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:ResourceTag/Environment"
+
+      values = [
+        "staging",
+        "global"
+      ]
+    }
+
+    condition {
+      test     = "Null"
+      variable = "aws:ResourceTag/Environment"
+
+      values = [
+        "false"
+      ]
+    }
+  }
+
+  statement {
+    sid    = "DenyResourceCreationWithoutEnvironmentTag"
+    effect = "Deny"
+
+    actions = [
+      "ec2:RunInstances",
+      "rds:CreateDBInstance",
+      "rds:CreateDBCluster",
+      "lambda:CreateFunction"
+    ]
+
+    resources = [
+      "*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:RequestTag/Environment"
+
+      values = [
+        "staging"
+      ]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "prod_deployment_permission_boundary" {
+  statement {
+    sid    = "AllowApprovedPermissions"
+    effect = "Allow"
+
+    actions = [
+      "*"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    sid    = "DenyUnapprovedRegions"
+    effect = "Deny"
+
+    actions = [
+      "*"
+    ]
+
+    resources = [
+      "*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:RequestedRegion"
+
+      values = [
+        "eu-west-2",
+        "eu-west-1"
+      ]
+    }
+  }
+
+  statement {
+    sid    = "DenySecurityServiceDisablement"
+    effect = "Deny"
+
+    actions = [
+      "cloudtrail:DeleteTrail",
+      "cloudtrail:StopLogging",
+      "cloudtrail:UpdateTrail",
+      "config:DeleteConfigurationRecorder",
+      "config:DeleteDeliveryChannel",
+      "config:StopConfigurationRecorder",
+      "guardduty:DeleteDetector",
+      "guardduty:UpdateDetector",
+      "securityhub:DisableSecurityHub",
+      "securityhub:UpdateSecurityHubConfiguration"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    sid    = "DenyIAMUserCreation"
+    effect = "Deny"
+
+    actions = [
+      "iam:CreateUser",
+      "iam:CreateAccessKey",
+      "iam:CreateLoginProfile"
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    sid    = "DenyCrossEnvironmentAccess"
+    effect = "Deny"
+
+    actions = [
+      "*"
+    ]
+
+    resources = [
+      "*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:ResourceTag/Environment"
+
+      values = [
+        "prod",
+        "global"
+      ]
+    }
+
+    condition {
+      test     = "Null"
+      variable = "aws:ResourceTag/Environment"
+
+      values = [
+        "false"
+      ]
+    }
+  }
+
+  statement {
+    sid    = "DenyResourceCreationWithoutEnvironmentTag"
+    effect = "Deny"
+
+    actions = [
+      "ec2:RunInstances",
+      "rds:CreateDBInstance",
+      "rds:CreateDBCluster",
+      "lambda:CreateFunction"
+    ]
+
+    resources = [
+      "*"
+    ]
+
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:RequestTag/Environment"
+
+      values = [
+        "prod"
+      ]
+    }
+  }
+}
 
 ###############################################################
 # AWS-Managed IAM Policy Lookup
@@ -330,6 +729,41 @@ resource "aws_iam_policy" "permission_boundary" {
   }
 }
 
+resource "aws_iam_policy" "dev_deployment_permission_boundary" {
+  name        = "TerraformDevDeploymentPermissionBoundary"
+  description = "Maximum permissions boundary for the dev Terraform deployment role."
+  policy      = data.aws_iam_policy_document.dev_deployment_permission_boundary.json
+
+  tags = {
+    ManagedBy   = "Terraform"
+    Project     = "Guardrails"
+    Environment = "dev"
+  }
+}
+
+resource "aws_iam_policy" "staging_deployment_permission_boundary" {
+  name        = "TerraformStagingDeploymentPermissionBoundary"
+  description = "Maximum permissions boundary for the staging Terraform deployment role."
+  policy      = data.aws_iam_policy_document.staging_deployment_permission_boundary.json
+
+  tags = {
+    ManagedBy   = "Terraform"
+    Project     = "Guardrails"
+    Environment = "staging"
+  }
+}
+
+resource "aws_iam_policy" "prod_deployment_permission_boundary" {
+  name        = "TerraformProdDeploymentPermissionBoundary"
+  description = "Maximum permissions boundary for the prod Terraform deployment role."
+  policy      = data.aws_iam_policy_document.prod_deployment_permission_boundary.json
+
+  tags = {
+    ManagedBy   = "Terraform"
+    Project     = "Guardrails"
+    Environment = "prod"
+  }
+}
 
 ###############################################################
 # Developers Read-Only Role

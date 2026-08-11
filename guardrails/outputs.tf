@@ -1,7 +1,3 @@
-/*
-Outputs will be added as guardrail resources are implemented.
-*/
-
 output "deny_unapproved_regions_policy_arn" {
   description = "ARN of the IAM policy that denies actions in unapproved regions."
   value       = aws_iam_policy.deny_unapproved_regions.arn
@@ -20,4 +16,19 @@ output "deny_iam_user_creation_policy_arn" {
 output "permission_boundary_policy_arn" {
   description = "ARN of the IAM policy that serves as a permission boundary"
   value       = aws_iam_policy.permission_boundary.arn
+}
+
+output "dev_deployment_permission_boundary_policy_arn" {
+  description = "ARN of the permission boundary for the dev Terraform deployment role."
+  value       = aws_iam_policy.dev_deployment_permission_boundary.arn
+}
+
+output "staging_deployment_permission_boundary_policy_arn" {
+  description = "ARN of the permission boundary for the staging Terraform deployment role."
+  value       = aws_iam_policy.staging_deployment_permission_boundary.arn
+}
+
+output "prod_deployment_permission_boundary_policy_arn" {
+  description = "ARN of the permission boundary for the prod Terraform deployment role."
+  value       = aws_iam_policy.prod_deployment_permission_boundary.arn
 }
