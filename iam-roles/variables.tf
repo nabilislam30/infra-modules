@@ -1,5 +1,15 @@
-variable "permission_boundary_policy_arn" {
-  description = "ARN of the Phase 2 permission boundary policy."
+variable "dev_permission_boundary_policy_arn" {
+  description = "ARN of the dev deployment role permission boundary policy."
+  type        = string
+}
+
+variable "staging_permission_boundary_policy_arn" {
+  description = "ARN of the staging deployment role permission boundary policy."
+  type        = string
+}
+
+variable "prod_permission_boundary_policy_arn" {
+  description = "ARN of the prod deployment role permission boundary policy."
   type        = string
 }
 

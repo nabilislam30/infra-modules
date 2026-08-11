@@ -821,7 +821,7 @@ resource "aws_iam_role_policy_attachment" "dev_backend_permissions" {
 resource "aws_iam_role" "dev" {
   name                 = "tf-deploy-dev"
   assume_role_policy   = data.aws_iam_policy_document.dev_deploy_role_trust.json
-  permissions_boundary = var.permission_boundary_policy_arn
+  permissions_boundary = var.dev_permission_boundary_policy_arn
 
   tags = {
     Environment = "dev"
@@ -833,7 +833,7 @@ resource "aws_iam_role" "dev" {
 resource "aws_iam_role" "staging" {
   name                 = "tf-deploy-staging"
   assume_role_policy   = data.aws_iam_policy_document.staging_deploy_role_trust.json
-  permissions_boundary = var.permission_boundary_policy_arn
+  permissions_boundary = var.staging_permission_boundary_policy_arn
 
   tags = {
     Environment = "staging"
@@ -845,7 +845,7 @@ resource "aws_iam_role" "staging" {
 resource "aws_iam_role" "prod" {
   name                 = "tf-deploy-prod"
   assume_role_policy   = data.aws_iam_policy_document.prod_deploy_role_trust.json
-  permissions_boundary = var.permission_boundary_policy_arn
+  permissions_boundary = var.prod_permission_boundary_policy_arn
 
   tags = {
     Environment = "prod"
