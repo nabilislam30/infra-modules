@@ -103,6 +103,10 @@ resource "aws_imagebuilder_infrastructure_configuration" "golden_ami" {
   subnet_id          = var.subnet_id
   security_group_ids = var.security_group_ids
 
+  instance_metadata_options {
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
   terminate_instance_on_failure = true
 
   tags = var.common_tags
