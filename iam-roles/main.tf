@@ -896,6 +896,19 @@ data "aws_iam_policy_document" "image_builder_deployment_permissions" {
 
     resources = ["*"]
   }
+
+  statement {
+    sid    = "ReadImageBuilderParentAmiParameter"
+    effect = "Allow"
+
+    actions = [
+      "ssm:GetParameter"
+    ]
+
+    resources = [
+      "arn:aws:ssm:eu-west-2::parameter/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+    ]
+  }
 }
 
 resource "aws_iam_policy" "image_builder_deployment_permissions" {
