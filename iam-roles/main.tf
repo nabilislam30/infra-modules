@@ -828,6 +828,99 @@ resource "aws_iam_role_policy_attachment" "dev_backend_permissions" {
 }
 
 # -----------------------------------------------------------------------------
+# EC2 Image Builder Deployment Permissions
+# -----------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "image_builder_deployment_permissions" {
+  statement {
+    sid    = "ManageEC2ImageBuilder"
+    effect = "Allow"
+
+    actions = [
+      "imagebuilder:CreateComponent",
+      "imagebuilder:GetComponent",
+      "imagebuilder:DeleteComponent",
+
+      "imagebuilder:CreateImageRecipe",
+      "imagebuilder:GetImageRecipe",
+      "imagebuilder:DeleteImageRecipe",
+
+      "imagebuilder:CreateInfrastructureConfiguration",
+      "imagebuilder:GetInfrastructureConfiguration",
+      "imagebuilder:UpdateInfrastructureConfiguration",
+      "imagebuilder:DeleteInfrastructureConfiguration",
+
+      "imagebuilder:CreateDistributionConfiguration",
+      "imagebuilder:GetDistributionConfiguration",
+      "imagebuilder:UpdateDistributionConfiguration",
+      "imagebuilder:DeleteDistributionConfiguration",
+
+      "imagebuilder:CreateImagePipeline",
+      "imagebuilder:GetImagePipeline",
+      "imagebuilder:UpdateImagePipeline",
+      "imagebuilder:DeleteImagePipeline",
+
+      "imagebuilder:ListTagsForResource",
+      "imagebuilder:TagResource",
+      "imagebuilder:UntagResource"
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "ManageImageBuilderIAMRole"
+    effect = "Allow"
+
+    actions = [
+      "iam:CreateRole",
+      "iam:GetRole",
+      "iam:DeleteRole",
+      "iam:TagRole",
+      "iam:UntagRole",
+
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:ListAttachedRolePolicies",
+
+      "iam:CreateInstanceProfile",
+      "iam:GetInstanceProfile",
+      "iam:DeleteInstanceProfile",
+      "iam:AddRoleToInstanceProfile",
+      "iam:RemoveRoleFromInstanceProfile",
+      "iam:TagInstanceProfile",
+      "iam:UntagInstanceProfile",
+
+      "iam:PassRole"
+    ]
+
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "image_builder_deployment_permissions" {
+  name        = "TerraformDeployImageBuilderAccess"
+  description = "Allows Terraform deployment roles to manage EC2 Image Builder resources and their build instance IAM role."
+
+  policy = data.aws_iam_policy_document.image_builder_deployment_permissions.json
+}
+
+resource "aws_iam_role_policy_attachment" "dev_image_builder_deployment_permissions" {
+  role       = aws_iam_role.dev.name
+  policy_arn = aws_iam_policy.image_builder_deployment_permissions.arn
+}
+
+resource "aws_iam_role_policy_attachment" "staging_image_builder_deployment_permissions" {
+  role       = aws_iam_role.staging.name
+  policy_arn = aws_iam_policy.image_builder_deployment_permissions.arn
+}
+
+resource "aws_iam_role_policy_attachment" "prod_image_builder_deployment_permissions" {
+  role       = aws_iam_role.prod.name
+  policy_arn = aws_iam_policy.image_builder_deployment_permissions.arn
+}
+
+# -----------------------------------------------------------------------------
 # Terraform Deployment Roles
 # -----------------------------------------------------------------------------
 
