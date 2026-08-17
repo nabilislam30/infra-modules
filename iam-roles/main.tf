@@ -855,6 +855,8 @@ data "aws_iam_policy_document" "image_builder_deployment_permissions" {
       "imagebuilder:UpdateDistributionConfiguration",
       "imagebuilder:DeleteDistributionConfiguration",
 
+      "imagebuilder:StartImagePipelineExecution",
+      "imagebuilder:GetImage",
       "imagebuilder:CreateImagePipeline",
       "imagebuilder:GetImagePipeline",
       "imagebuilder:UpdateImagePipeline",
