@@ -1,3 +1,115 @@
-/*
-Input variables will be added as the module is implemented.
-*/
+# -----------------------------------------------------------------------------
+# General
+# -----------------------------------------------------------------------------
+
+variable "name" {
+  description = "Name used for compute, Auto Scaling, and load balancing resources."
+  type        = string
+}
+
+variable "common_tags" {
+  description = "Common tags applied to compute resources."
+  type        = map(string)
+  default     = {}
+}
+
+# -----------------------------------------------------------------------------
+# Network
+# -----------------------------------------------------------------------------
+
+variable "vpc_id" {
+  description = "ID of the VPC where compute resources are deployed."
+  type        = string
+}
+
+variable "public_subnet_ids" {
+  description = "Public subnet IDs used by the Application Load Balancer."
+  type        = list(string)
+}
+
+variable "private_subnet_ids" {
+  description = "Private subnet IDs used by the Auto Scaling Group instances."
+  type        = list(string)
+}
+
+# -----------------------------------------------------------------------------
+# Golden AMI
+# -----------------------------------------------------------------------------
+
+variable "ami_id" {
+  description = "Golden AMI ID consumed by the launch template."
+  type        = string
+}
+
+# -----------------------------------------------------------------------------
+# EC2
+# -----------------------------------------------------------------------------
+
+variable "instance_type" {
+  description = "EC2 instance type used by the Auto Scaling Group."
+  type        = string
+}
+
+# -----------------------------------------------------------------------------
+# Auto Scaling
+# -----------------------------------------------------------------------------
+
+variable "min_size" {
+  description = "Minimum number of instances in the Auto Scaling Group."
+  type        = number
+}
+
+variable "max_size" {
+  description = "Maximum number of instances in the Auto Scaling Group."
+  type        = number
+}
+
+variable "desired_capacity" {
+  description = "Desired number of instances in the Auto Scaling Group."
+  type        = number
+}
+
+# -----------------------------------------------------------------------------
+# Application
+# -----------------------------------------------------------------------------
+
+variable "application_port" {
+  description = "Port used by the application and target group."
+  type        = number
+}
+
+variable "health_check_path" {
+  description = "HTTP health check path used by the target group."
+  type        = string
+}
+
+# -----------------------------------------------------------------------------
+# Dev SSH Learning Mode
+# -----------------------------------------------------------------------------
+
+variable "enable_ssh" {
+  description = "Whether SSH access is enabled for development learning mode."
+  type        = bool
+  default     = false
+}
+
+variable "key_name" {
+  description = "EC2 key pair name used when SSH learning mode is enabled."
+  type        = string
+  default     = null
+}
+
+variable "my_ip" {
+  description = "Public IPv4 address allowed to use SSH when development learning mode is enabled."
+  type        = string
+  default     = null
+}
+
+# -----------------------------------------------------------------------------
+# Application Load Balancer TLS
+# -----------------------------------------------------------------------------
+
+variable "certificate_arn" {
+  description = "ARN of the ACM certificate used by the Application Load Balancer HTTPS listener."
+  type        = string
+}
