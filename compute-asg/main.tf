@@ -61,8 +61,8 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
   description = "Allow inbound HTTPS traffic to the Application Load Balancer."
 
   cidr_ipv4   = "0.0.0.0/0"
-  from_port   = 443
-  to_port     = 443
+  from_port   = var.application_port
+  to_port     = var.application_port
   ip_protocol = "tcp"
 
   tags = var.common_tags
@@ -189,14 +189,17 @@ resource "aws_lb_target_group" "this" {
 }
 
 # -----------------------------------------------------------------------------
-# Application Load Balancer HTTPS Listener
+# Application Load Balancer Listener
 # -----------------------------------------------------------------------------
 
-resource "aws_lb_listener" "https" {
+# Development learning environment uses HTTP because no project domain or ACM
+# certificate is available. The ALB is internet-facing, while compute instances
+# remain private behind the load balancer.
+# trivy:ignore:AWS-0054
+resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.this.arn
-  port              = 443
-  protocol          = "HTTPS"
-  certificate_arn   = var.certificate_arn
+  port              = var.application_port
+  protocol          = "HTTP"
 
   default_action {
     type             = "forward"

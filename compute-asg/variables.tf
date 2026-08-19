@@ -104,12 +104,3 @@ variable "my_ip" {
   type        = string
   default     = null
 }
-
-# -----------------------------------------------------------------------------
-# Application Load Balancer TLS
-# -----------------------------------------------------------------------------
-
-variable "certificate_arn" {
-  description = "ARN of the ACM certificate used by the Application Load Balancer HTTPS listener."
-  type        = string
-}
