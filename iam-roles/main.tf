@@ -911,6 +911,18 @@ data "aws_iam_policy_document" "image_builder_deployment_permissions" {
       "arn:aws:ssm:eu-west-2::parameter/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
     ]
   }
+
+  statement {
+    sid    = "ReadAcmCertificates"
+    effect = "Allow"
+
+    actions = [
+      "acm:ListCertificates",
+      "acm:DescribeCertificate"
+    ]
+
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "image_builder_deployment_permissions" {
