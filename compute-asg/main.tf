@@ -194,7 +194,7 @@ resource "aws_lb_target_group" "this" {
 
 # Development learning environment uses HTTP because no project domain or ACM
 # certificate is available. The ALB is internet-facing, while compute instances
-# remain private behind the load balancer.
+# remain behind the load balancer.
 # trivy:ignore:AWS-0054
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.this.arn
@@ -222,9 +222,13 @@ resource "aws_launch_template" "this" {
     name = aws_iam_instance_profile.compute.name
   }
 
-  vpc_security_group_ids = [
-    aws_security_group.compute.id
-  ]
+  network_interfaces {
+    associate_public_ip_address = var.associate_public_ip_address
+
+    security_groups = [
+      aws_security_group.compute.id
+    ]
+  }
 
   metadata_options {
     http_tokens                 = "required"
@@ -251,7 +255,7 @@ resource "aws_autoscaling_group" "this" {
   max_size         = var.max_size
   desired_capacity = var.desired_capacity
 
-  vpc_zone_identifier = var.private_subnet_ids
+  vpc_zone_identifier = var.compute_subnet_ids
 
   target_group_arns = [
     aws_lb_target_group.this.arn

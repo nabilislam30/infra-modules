@@ -27,11 +27,6 @@ variable "public_subnet_ids" {
   type        = list(string)
 }
 
-variable "private_subnet_ids" {
-  description = "Private subnet IDs used by the Auto Scaling Group instances."
-  type        = list(string)
-}
-
 # -----------------------------------------------------------------------------
 # Golden AMI
 # -----------------------------------------------------------------------------
@@ -103,4 +98,19 @@ variable "my_ip" {
   description = "Public IPv4 address allowed to use SSH when development learning mode is enabled."
   type        = string
   default     = null
+}
+
+# -----------------------------------------------------------------------------
+# Compute Networking
+# -----------------------------------------------------------------------------
+
+variable "compute_subnet_ids" {
+  description = "Subnet IDs used by the Auto Scaling Group instances."
+  type        = list(string)
+}
+
+variable "associate_public_ip_address" {
+  description = "Whether compute instances receive a public IPv4 address."
+  type        = bool
+  default     = false
 }
