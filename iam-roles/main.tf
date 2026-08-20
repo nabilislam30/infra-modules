@@ -476,6 +476,10 @@ data "aws_iam_policy_document" "vpc_deployment_permissions" {
     effect = "Allow"
 
     actions = [
+      "rds:CreateDBInstance",
+      "rds:DescribeDBInstances",
+      "rds:ModifyDBInstance",
+      "rds:DeleteDBInstance",
       "rds:CreateDBSubnetGroup",
       "rds:DescribeDBSubnetGroups",
       "rds:ModifyDBSubnetGroup",
@@ -534,7 +538,8 @@ data "aws_iam_policy_document" "kms_read_tags_permissions" {
     effect = "Allow"
 
     actions = [
-      "kms:ListResourceTags"
+      "kms:ListResourceTags",
+      "kms:CreateGrant"
     ]
 
     resources = ["*"]
