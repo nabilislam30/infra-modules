@@ -114,3 +114,13 @@ variable "associate_public_ip_address" {
   type        = bool
   default     = false
 }
+
+variable "database_security_group_id" {
+  description = "Security group ID of the database allowed to receive PostgreSQL traffic from compute instances."
+  type        = string
+}
+
+variable "database_secret_arn" {
+  description = "ARN of the RDS-managed Secrets Manager secret readable by compute instances."
+  type        = string
+}

@@ -44,6 +44,30 @@ resource "aws_iam_instance_profile" "compute" {
 }
 
 # -----------------------------------------------------------------------------
+# Secrets Manager Access
+# -----------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "database_secret_access" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "secretsmanager:GetSecretValue"
+    ]
+
+    resources = [
+      var.database_secret_arn
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "database_secret_access" {
+  name   = "${var.name}-database-secret-access"
+  role   = aws_iam_role.compute.id
+  policy = data.aws_iam_policy_document.database_secret_access.json
+}
+
+# -----------------------------------------------------------------------------
 # Application Load Balancer Security Group
 # -----------------------------------------------------------------------------
 
@@ -141,6 +165,22 @@ resource "aws_vpc_security_group_egress_rule" "compute_https" {
   from_port   = 443
   to_port     = 443
   ip_protocol = "tcp"
+
+  tags = var.common_tags
+}
+
+# -----------------------------------------------------------------------------
+# Compute PostgreSQL Egress
+# -----------------------------------------------------------------------------
+resource "aws_vpc_security_group_egress_rule" "compute_to_database" {
+  security_group_id = aws_security_group.compute.id
+
+  description = "Allow PostgreSQL traffic from compute instances to the database."
+
+  referenced_security_group_id = var.database_security_group_id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
 
   tags = var.common_tags
 }
