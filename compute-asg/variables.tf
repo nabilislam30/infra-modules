@@ -124,3 +124,8 @@ variable "database_secret_arn" {
   description = "ARN of the RDS-managed Secrets Manager secret readable by compute instances."
   type        = string
 }
+
+variable "database_secret_kms_key_arn" {
+  description = "ARN of the KMS key used to encrypt the RDS-managed Secrets Manager secret."
+  type        = string
+}

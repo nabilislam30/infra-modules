@@ -49,6 +49,7 @@ resource "aws_iam_instance_profile" "compute" {
 
 data "aws_iam_policy_document" "database_secret_access" {
   statement {
+    sid    = "ReadDatabaseSecret"
     effect = "Allow"
 
     actions = [
@@ -57,6 +58,19 @@ data "aws_iam_policy_document" "database_secret_access" {
 
     resources = [
       var.database_secret_arn
+    ]
+  }
+
+  statement {
+    sid    = "DecryptDatabaseSecret"
+    effect = "Allow"
+
+    actions = [
+      "kms:Decrypt"
+    ]
+
+    resources = [
+      var.database_secret_kms_key_arn
     ]
   }
 }
