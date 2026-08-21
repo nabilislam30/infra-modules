@@ -31,8 +31,8 @@ data "aws_iam_policy_document" "deny_unapproved_regions" {
     sid    = "DenyUnapprovedRegions"
     effect = "Deny"
 
-    actions = [
-      "*"
+    not_actions = [
+      "iam:*"
     ]
 
     resources = [
@@ -152,8 +152,8 @@ data "aws_iam_policy_document" "permission_boundary" {
     sid    = "DenyUnapprovedRegions"
     effect = "Deny"
 
-    actions = [
-      "*"
+    not_actions = [
+      "iam:*"
     ]
 
     resources = [
@@ -290,8 +290,8 @@ data "aws_iam_policy_document" "dev_deployment_permission_boundary" {
     sid    = "DenyUnapprovedRegions"
     effect = "Deny"
 
-    actions = [
-      "*"
+    not_actions = [
+      "iam:*"
     ]
 
     resources = [
@@ -422,8 +422,8 @@ data "aws_iam_policy_document" "staging_deployment_permission_boundary" {
     sid    = "DenyUnapprovedRegions"
     effect = "Deny"
 
-    actions = [
-      "*"
+    not_actions = [
+      "iam:*"
     ]
 
     resources = [
@@ -554,8 +554,8 @@ data "aws_iam_policy_document" "prod_deployment_permission_boundary" {
     sid    = "DenyUnapprovedRegions"
     effect = "Deny"
 
-    actions = [
-      "*"
+    not_actions = [
+      "iam:*"
     ]
 
     resources = [

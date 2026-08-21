@@ -954,6 +954,128 @@ resource "aws_iam_role_policy_attachment" "prod_image_builder_deployment_permiss
 }
 
 # -----------------------------------------------------------------------------
+# Compute Deployment Permissions
+# -----------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "compute_deployment_permissions" {
+  statement {
+    sid    = "ManageComputeLaunchTemplates"
+    effect = "Allow"
+
+    actions = [
+      "ec2:DescribeImages",
+      "ec2:DescribeLaunchTemplates",
+      "ec2:DescribeLaunchTemplateVersions",
+      "ec2:CreateLaunchTemplate",
+      "ec2:CreateLaunchTemplateVersion",
+      "ec2:ModifyLaunchTemplate",
+      "ec2:DeleteLaunchTemplate",
+      "ec2:DeleteLaunchTemplateVersions"
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "ManageComputeIam"
+    effect = "Allow"
+
+    actions = [
+      "iam:CreateRole",
+      "iam:GetRole",
+      "iam:DeleteRole",
+      "iam:TagRole",
+      "iam:UntagRole",
+
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:ListAttachedRolePolicies",
+
+      "iam:PutRolePolicy",
+      "iam:GetRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:ListRolePolicies",
+
+      "iam:CreateInstanceProfile",
+      "iam:GetInstanceProfile",
+      "iam:DeleteInstanceProfile",
+      "iam:AddRoleToInstanceProfile",
+      "iam:RemoveRoleFromInstanceProfile",
+      "iam:TagInstanceProfile",
+      "iam:UntagInstanceProfile",
+
+      "iam:PassRole"
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "ManageApplicationLoadBalancer"
+    effect = "Allow"
+
+    actions = [
+      "elasticloadbalancing:CreateLoadBalancer",
+      "elasticloadbalancing:DeleteLoadBalancer",
+      "elasticloadbalancing:DescribeLoadBalancers",
+      "elasticloadbalancing:DescribeLoadBalancerAttributes",
+      "elasticloadbalancing:ModifyLoadBalancerAttributes",
+
+      "elasticloadbalancing:CreateTargetGroup",
+      "elasticloadbalancing:DeleteTargetGroup",
+      "elasticloadbalancing:DescribeTargetGroups",
+      "elasticloadbalancing:DescribeTargetGroupAttributes",
+      "elasticloadbalancing:ModifyTargetGroup",
+      "elasticloadbalancing:ModifyTargetGroupAttributes",
+      "elasticloadbalancing:DescribeTargetHealth",
+
+      "elasticloadbalancing:CreateListener",
+      "elasticloadbalancing:DeleteListener",
+      "elasticloadbalancing:DescribeListeners",
+      "elasticloadbalancing:ModifyListener",
+
+      "elasticloadbalancing:AddTags",
+      "elasticloadbalancing:RemoveTags",
+      "elasticloadbalancing:DescribeTags"
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "ManageAutoScaling"
+    effect = "Allow"
+
+    actions = [
+      "autoscaling:CreateAutoScalingGroup",
+      "autoscaling:UpdateAutoScalingGroup",
+      "autoscaling:DeleteAutoScalingGroup",
+      "autoscaling:DescribeAutoScalingGroups",
+      "autoscaling:CreateOrUpdateTags",
+      "autoscaling:DeleteTags",
+      "autoscaling:StartInstanceRefresh",
+      "autoscaling:DescribeInstanceRefreshes",
+      "autoscaling:CancelInstanceRefresh"
+    ]
+
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "compute_deployment_permissions" {
+  name        = "TerraformDeployComputeAccess"
+  description = "Allows the dev Terraform deployment role to manage immutable compute infrastructure."
+
+  policy = data.aws_iam_policy_document.compute_deployment_permissions.json
+}
+
+resource "aws_iam_role_policy_attachment" "dev_compute_deployment_permissions" {
+  role       = aws_iam_role.dev.name
+  policy_arn = aws_iam_policy.compute_deployment_permissions.arn
+}
+
+
+# -----------------------------------------------------------------------------
 # Terraform Deployment Roles
 # -----------------------------------------------------------------------------
 
