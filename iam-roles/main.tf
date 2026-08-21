@@ -444,6 +444,7 @@ data "aws_iam_policy_document" "vpc_deployment_permissions" {
       "ec2:CreateSecurityGroup",
       "ec2:DeleteSecurityGroup",
       "ec2:DescribeSecurityGroups",
+      "ec2:DescribeSecurityGroupRules",
       "ec2:AuthorizeSecurityGroupIngress",
       "ec2:AuthorizeSecurityGroupEgress",
       "ec2:RevokeSecurityGroupIngress",
