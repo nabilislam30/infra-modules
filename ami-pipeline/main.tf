@@ -70,6 +70,16 @@ resource "aws_imagebuilder_component" "golden_ami" {
   data = var.component_document
 
   tags = var.common_tags
+
+  # Image Builder components are immutable and versioned.
+  # Document changes must be accompanied by a component_version bump.
+  # This prevents API/provider formatting normalisation from causing
+  # unnecessary replacement of an unchanged component.
+  lifecycle {
+    ignore_changes = [
+      data
+    ]
+  }
 }
 
 # -----------------------------------------------------------------------------
