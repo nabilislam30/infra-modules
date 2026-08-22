@@ -1032,6 +1032,7 @@ data "aws_iam_policy_document" "compute_deployment_permissions" {
       "elasticloadbalancing:CreateListener",
       "elasticloadbalancing:DeleteListener",
       "elasticloadbalancing:DescribeListeners",
+      "elasticloadbalancing:DescribeListenerAttributes",
       "elasticloadbalancing:ModifyListener",
 
       "elasticloadbalancing:AddTags",
